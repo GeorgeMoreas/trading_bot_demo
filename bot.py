@@ -4,7 +4,15 @@ import json
 import datetime
 import time
 
+from pylab import *
+from datetime import datetime
+from matplotlib.dates import  DateFormatter, WeekdayLocator, HourLocator, \
+     DayLocator, MONDAY
+from matplotlib.finance import candlestick,\
+     plot_day_summary, candlestick2
+
 import matplotlib.pyplot as plt
+from matplotlib.finance import candlestick_ohlc
 
 
 access_token = 'a0fce8d9a47637254bdef08a4e059641-b03e0bd3095df91751f3fbb7592f2579'
@@ -73,7 +81,7 @@ def positions():
 
 
 ## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
-def WMA(period=20, granularity='M1', pair='USD_JPY'):
+def WMA(period=100, granularity='M1', pair='USD_JPY'):
     conn = httplib.HTTPSConnection("api-fxpractice.oanda.com")
     #conn.request("GET", "/v1/accounts/" + account_id, "", headers)
 
@@ -102,18 +110,22 @@ def WMA(period=20, granularity='M1', pair='USD_JPY'):
             min_candle = candle['lowMid']
         if candle['closeMid'] > max_candle:
             max_candle = candle['highMid']
+    min_candle -= 0.1
+    max_candle += 0.1
+
+    dates = []
+    prices = []
+
+    plt.clf()
+    fig, ax = plt.subplots()
 
     for candle in candles:
-        x += 1
+        x += 1.0
         candleTime = time.mktime(time.strptime(str(candle['time']),  '%Y-%m-%dT%H:%M:%S.%fZ'))
+        candleTimeChart = date2num(datetime.strptime(candle['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
 
-        plt.axis([0, x, min_candle, max_candle])
-        plt.plot(x, candle['closeMid'], 'ro', x, candle['openMid'], 'go', x, candle['lowMid'], 'r.', x, candle['highMid'], 'g.')
-        plt.draw()
-        plt.show(block=False)
-
-        print candle['closeMid']
-        print candles
+        dates.append(candleTimeChart)
+        prices.append([candleTimeChart, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
 
         if candleTime < oldest:
             oldprice = candle['closeMid']
@@ -132,6 +144,13 @@ def WMA(period=20, granularity='M1', pair='USD_JPY'):
     for i in range(1, period + 1):
         totalweight += i
     print "WMA:", float(finalsma)/float(totalweight)
+
+    plt.axis([min(dates), max(dates), min_candle, max_candle])
+    plt.title('Bar Chart of ' + pair)
+    candlestick_ohlc(ax, prices, 0.5, colorup='b', colordown='r')
+    plt.legend()
+    plt.draw()
+    plt.show(block=False)
 
     print min_candle
     print max_candle
