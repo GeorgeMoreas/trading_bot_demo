@@ -73,7 +73,7 @@ def positions():
 
 
 ## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
-def WMA(period=20, granularity='M15', pair='USD_JPY'):
+def WMA(period=20, granularity='M1', pair='USD_JPY'):
     conn = httplib.HTTPSConnection("api-fxpractice.oanda.com")
     #conn.request("GET", "/v1/accounts/" + account_id, "", headers)
 
@@ -99,16 +99,16 @@ def WMA(period=20, granularity='M15', pair='USD_JPY'):
 
     for candle in candles:
         if candle['closeMid'] < min_candle:
-            min_candle = candle['closeMid']
+            min_candle = candle['lowMid']
         if candle['closeMid'] > max_candle:
-            max_candle = candle['closeMid']
+            max_candle = candle['highMid']
 
     for candle in candles:
         x += 1
         candleTime = time.mktime(time.strptime(str(candle['time']),  '%Y-%m-%dT%H:%M:%S.%fZ'))
 
         plt.axis([0, x, min_candle, max_candle])
-        plt.plot(x, candle['closeMid'], 'bo')
+        plt.plot(x, candle['closeMid'], 'ro', x, candle['openMid'], 'go', x, candle['lowMid'], 'r.', x, candle['highMid'], 'g.')
         plt.draw()
         plt.show(block=False)
 
