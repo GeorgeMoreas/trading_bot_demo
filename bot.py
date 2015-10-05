@@ -81,9 +81,9 @@ def positions():
 
 
 ## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
-def WMA(period=100, granularity='M1', pair='USD_JPY'):
+def WMA(period=100, granularity='M1', pair='USD_JPY', wma_period_1=5, wma_period_2=20):
     conn = httplib.HTTPSConnection("api-fxpractice.oanda.com")
-    #conn.request("GET", "/v1/accounts/" + account_id, "", headers)
+#   conn.request("GET", "/v1/accounts/" + account_id, "", headers)
 
     url = ''.join(["/v1/candles?count=", str(period + 1), "&instrument=", pair, "&granularity=", str(granularity), "&candleFormat=midpoint"])
     conn.request("GET", url, "", headers)
@@ -101,11 +101,33 @@ def WMA(period=100, granularity='M1', pair='USD_JPY'):
     oldprice = 0
 
     x = 0.0
-
     min_candle = 10000
     max_candle = 0
 
+    candle_wma_1 = []
+    wma_denom_1 = (wma_period_1 * (wma_period_1 + 1)) / 2
+    candle_wma_2 = []
+    wma_denom_2 = (wma_period_2 * (wma_period_2 + 1)) / 2
+    i = 0
+
     for candle in candles:
+        wma_total_1 = 0
+        wma_total_2 = 0
+
+        for j in range(wma_period_1):
+            wma_total_1 += candles[i - j]['highMid'] * (wma_period_1 - j)
+
+        for j in range(wma_period_2):
+            wma_total_2 += candles[i - j]['highMid'] * (wma_period_2 - j)
+
+        wma_1 = wma_total_1 / wma_denom_1
+        wma_2 = wma_total_2 / wma_denom_2
+        candle_wma_1.append(wma_1)
+        candle_wma_2.append(wma_2)
+        print candle_wma_1[i - 1]
+        print candle_wma_2[i - 1]
+        i += 1
+
         if candle['closeMid'] < min_candle:
             min_candle = candle['lowMid']
         if candle['closeMid'] > max_candle:
@@ -145,17 +167,17 @@ def WMA(period=100, granularity='M1', pair='USD_JPY'):
         totalweight += i
     print "WMA:", float(finalsma)/float(totalweight)
 
-    plt.axis([min(dates), max(dates), min_candle, max_candle])
+#    plt.axis([min(dates), max(dates), min_candle, max_candle])
     plt.title('Bar Chart of ' + pair)
-    candlestick_ohlc(ax, prices, 0.5, colorup='b', colordown='r')
+#    candlestick_ohlc(ax, prices, 0.0005, colorup='b', colordown='r')
+    plt.plot(candle_wma_1)
+    plt.plot(candle_wma_2)
     plt.legend()
     plt.draw()
     plt.show(block=False)
 
-    print min_candle
-    print max_candle
+    #return float(finalsma)/float(totalweight)
 
-    return float(finalsma)/float(totalweight)
 
 def trade():
     global lastTrade
