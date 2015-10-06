@@ -109,7 +109,6 @@ def WMA(period=100, granularity='M1', pair='USD_JPY', wma_period_1=5, wma_period
     candle_wma_2 = []
     wma_denom_2 = (wma_period_2 * (wma_period_2 + 1)) / 2
     i = 0
-
     for candle in candles:
         wma_total_1 = 0
         wma_total_2 = 0
@@ -140,15 +139,15 @@ def WMA(period=100, granularity='M1', pair='USD_JPY', wma_period_1=5, wma_period
     prices_1 = []
 
     plt.clf()
-    fig, ax = plt.subplots()
+    plt.cla()
 
     for candle in candles:
         x += 1.0
         candleTime = time.mktime(time.strptime(str(candle['time']),  '%Y-%m-%dT%H:%M:%S.%fZ'))
         candleTimeChart = date2num(datetime.strptime(candle['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
 
-        dates.append(candleTimeChart)
-        prices.append([candleTimeChart, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
+        dates.append(candleTime)
+        prices.append([candleTime, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
         prices_1.append(candle['closeMid'])
 
         if candleTime < oldest:
@@ -169,10 +168,13 @@ def WMA(period=100, granularity='M1', pair='USD_JPY', wma_period_1=5, wma_period
         totalweight += i
     print "WMA:", float(finalsma)/float(totalweight)
 
-#    plt.axis([min(dates), max(dates), min_candle, max_candle])
+    plt.figure(1)
+
+    plt.axis([min(dates), max(dates), min_candle, max_candle])
     plt.title('Bar Chart of ' + pair)
-#    candlestick_ohlc(ax, prices, 0.0005, colorup='b', colordown='r')
-    plt.plot(prices_1)
+    ax = plt.subplot(211)
+    candlestick_ohlc(ax, prices, 25, colorup='b', colordown='r')
+    plt.subplot(212)
     plt.plot(candle_wma_1)
     plt.plot(candle_wma_2)
     plt.legend()
