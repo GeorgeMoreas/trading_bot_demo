@@ -137,6 +137,7 @@ def WMA(period=100, granularity='M1', pair='USD_JPY', wma_period_1=5, wma_period
 
     dates = []
     prices = []
+    prices_1 = []
 
     plt.clf()
     fig, ax = plt.subplots()
@@ -148,6 +149,7 @@ def WMA(period=100, granularity='M1', pair='USD_JPY', wma_period_1=5, wma_period
 
         dates.append(candleTimeChart)
         prices.append([candleTimeChart, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
+        prices_1.append(candle['closeMid'])
 
         if candleTime < oldest:
             oldprice = candle['closeMid']
@@ -170,6 +172,7 @@ def WMA(period=100, granularity='M1', pair='USD_JPY', wma_period_1=5, wma_period
 #    plt.axis([min(dates), max(dates), min_candle, max_candle])
     plt.title('Bar Chart of ' + pair)
 #    candlestick_ohlc(ax, prices, 0.0005, colorup='b', colordown='r')
+    plt.plot(prices_1)
     plt.plot(candle_wma_1)
     plt.plot(candle_wma_2)
     plt.legend()
