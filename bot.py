@@ -81,7 +81,7 @@ def positions():
 
 
 ## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
-def WMA(period=100, granularity='M1', pair='USD_JPY', wma_period_1=5, wma_period_2=20):
+def WMA(period=20, granularity='M15', pair='USD_JPY', wma_period_1=5, wma_period_2=20):
     conn = httplib.HTTPSConnection("api-fxpractice.oanda.com")
 #   conn.request("GET", "/v1/accounts/" + account_id, "", headers)
 
@@ -135,6 +135,7 @@ def WMA(period=100, granularity='M1', pair='USD_JPY', wma_period_1=5, wma_period
     max_candle += 0.1
 
     dates = []
+    date_label = []
     prices = []
     prices_1 = []
 
@@ -143,18 +144,24 @@ def WMA(period=100, granularity='M1', pair='USD_JPY', wma_period_1=5, wma_period
 
     for candle in candles:
         x += 1.0
-        candleTime = time.mktime(time.strptime(str(candle['time']),  '%Y-%m-%dT%H:%M:%S.%fZ'))
-        candleTimeChart = date2num(datetime.strptime(candle['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
+        candleTimeLabels = time.strptime(str(candle['time']),  '%Y-%m-%dT%H:%M:%S.%fZ')
+        candleTimeValues = date2num(datetime.strptime(candle['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
+        date_label.append(str(candleTimeLabels[1]) + '-' +
+                          str(candleTimeLabels[2]) + '-' +
+                          str(candleTimeLabels[0]) + ' ' +
+                          str(candleTimeLabels[3]) + ':' +
+                          str(candleTimeLabels[4]) + ':' +
+                          str(candleTimeLabels[5]))
 
-        dates.append(candleTime)
-        prices.append([candleTime, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
+        dates.append(candleTimeValues)
+        prices.append([candleTimeValues, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
         prices_1.append(candle['closeMid'])
 
-        if candleTime < oldest:
+        if candleTimeValues < oldest:
             oldprice = candle['closeMid']
             continue
         else:
-            while oldest < candleTime:
+            while oldest < candleTimeValues:
                 count += 1
                 finalsma += oldprice * count
                 oldest += candlewidth
@@ -166,17 +173,16 @@ def WMA(period=100, granularity='M1', pair='USD_JPY', wma_period_1=5, wma_period
     totalweight = 0
     for i in range(1, period + 1):
         totalweight += i
-    print "WMA:", float(finalsma)/float(totalweight)
 
     plt.figure(1)
-
     plt.axis([min(dates), max(dates), min_candle, max_candle])
     plt.title('Bar Chart of ' + pair)
-    ax = plt.subplot(211)
-    candlestick_ohlc(ax, prices, 25, colorup='b', colordown='r')
-    plt.subplot(212)
-    plt.plot(candle_wma_1)
-    plt.plot(candle_wma_2)
+    ax = plt.subplot(212)
+    plt.subplot(211)
+    plt.plot_date(dates, candle_wma_1, 'm-')
+    plt.xticks(np.arange(min(dates), max(dates), 0.01), date_label, rotation='vertical')
+    candlestick_ohlc(ax, prices, 0.00025, colorup='b', colordown='r')
+    #plt.plot(candle_wma_2)
     plt.legend()
     plt.draw()
     plt.show(block=False)
