@@ -138,6 +138,13 @@ def WMA(period=20, granularity='S5', pair='USD_JPY', wma_period_1=5, wma_period_
         candle_wma_2.append(wma_2)
         i += 1
 
+#add functionality to take in an array of wma periods, and compare them all
+#against each other, with the following variables for AB testing:
+# 1. distance between the direction changes (int, int) --> (int)
+# 2. which direction did the change took place in (bool, bool) --> (bool)
+# 3. number of direction changes within a time range (int, time) --> (int)
+# 4. difference in WMA periods (int, int) --> int
+
         if candle['closeMid'] < min_candle:
             min_candle = candle['lowMid']
         if candle['closeMid'] > max_candle:
