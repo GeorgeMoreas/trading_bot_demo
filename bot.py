@@ -14,6 +14,13 @@ from matplotlib.finance import candlestick,\
 import matplotlib.pyplot as plt
 from matplotlib.finance import candlestick_ohlc
 
+rest_sandbox = "api-sandbox.oanda.com"
+rest_practice = "api-fxpractice.oanda.com"
+rest_trade = "api-fxtrade.oanda.com"
+
+stream_sandbox = "stream-sandbox.oanda.com"
+stream_practice = "stream-fxpractice.oanda.com"
+stream_trade = "stream-fxtrade.oanda.com"
 
 access_token = 'a0fce8d9a47637254bdef08a4e059641-b03e0bd3095df91751f3fbb7592f2579'
 account_id = '270129'
@@ -31,112 +38,118 @@ def getGranularitySeconds(granularity):
     if granularity[0] == 'S':
         return int(granularity[1:])
     elif granularity[0] == 'M' and len(granularity) > 1:
-        return 60*int(granularity[1:])
+        return 60 * int(granularity[1:])
     elif granularity[0] == 'H':
-        return 60*60*int(granularity[1:])
+        return 60 * 60 * int(granularity[1:])
     elif granularity[0] == 'D':
-        return 60*60*24
+        return 60 * 60 * 24
     elif granularity[0] == 'W':
-        return 60*60*24*7
+        return 60 * 60 * 24 * 7
     #Does not take into account actual month length
     elif granularity[0] == 'M':
-        return 60*60*24*30
+        return 60 * 60 * 24 * 30
 
 
 def account():
-    conn = httplib.HTTPSConnection("api-fxpractice.oanda.com")
+    conn = httplib.HTTPSConnection(rest_practice)
     conn.request("GET", "/v1/accounts/" + account_id, "", headers)
-    print conn.getresponse().read()
+	conn_json = conn.getresponse().read()
+    print conn_json
+	return conn_json
 
 
 def order(pair, units, buysell):
     now = datetime.datetime.now()
     expire = now + datetime.timedelta(days=1)
     expire = expire.isoformat('T') + "Z"
-    conn = httplib.HTTPSConnection("api-fxpractice.oanda.com")
+    conn = httplib.HTTPSConnection(rest_practice)
     params = urllib.urlencode({"instrument": pair,
                                "units" : units,
                                "type" : "market",
                                "side" : buysell})
-    conn.request("POST", "/v1/accounts/" + account_id + "/orders", params, headers)
-    print conn.getresponse().read()
+	url = ''.join(["/v1/accounts/", account_id, "/orders"])
+    conn.request("POST", url, params, headers)
+	conn_json = conn.getresponse().read()	
+    print conn_json
 
 
 def close():
-    conn = httplib.HTTPSConnection("api-fxpractice.oanda.com")
-    conn.request("DELETE", "/v1/accounts/" + account_id + "/positions/" + "USD_JPY", "", headers)
-    print conn.getresponse().read()
+    conn = httplib.HTTPSConnection(rest_practice)
+	url = ''.join(["/v1/accounts/", account_id, "/positions"])
+    conn.request("DELETE", url, "", headers)
+	conn_json = conn.getresponse().read()	
+    print conn_json
 
 
 def price():
-    conn = httplib.HTTPSConnection("api-fxpractice.oanda.com")
-    conn.request("GET", "/v1/prices?instruments=" + "USD_JPY", "", headers)
-    print conn.getresponse().read()
+    conn = httplib.HTTPSConnection(rest_practice)
+    params = urllib.urlencode({"instrument": pair})
+	url = ''.join(["/v1/prices"])
+    conn.request("GET", url, params, headers)
+	conn_json = conn.getresponse().read()	
+    print conn_json
 
 
 def positions():
-    conn = httplib.HTTPSConnection("api-fxpractice.oanda.com")
-    conn.request("GET", "/v1/accounts/" + account_id + "/positions", "", headers)
-    print conn.getresponse().read()
-
-
-## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
-def WMA(period=20, granularity='S5', pair='USD_JPY', wma_period_1=5, wma_period_2=20):
-    conn = httplib.HTTPSConnection("api-fxpractice.oanda.com")
-#   conn.request("GET", "/v1/accounts/" + account_id, "", headers)
-
-    url = ''.join(["/v1/candles?count=", str(period + 1), "&instrument=", pair, "&granularity=", str(granularity), "&candleFormat=midpoint"])
+    conn = httplib.HTTPSConnection(rest_practice)
+	url = ''.join(["/v1/accounts/", account_id, "/positions"])
     conn.request("GET", url, "", headers)
-
-    conn_json = conn.getresponse().read()
-    resp = json.loads(conn_json)
+	conn_json = conn.getresponse().read()	
     print conn_json
 
-    candles = resp['candles']
-    candlewidth = getGranularitySeconds(granularity)
-    min_candle = 10000
-    max_candle = 0
+def graph(period, granularity, pair):
+    conn = httplib.HTTPSConnection(rest_practice)
+    params = urllib.urlencode({"instrument": pair,
+                               "count" : str(period + 1),
+                               "granularity" : str(granularity),
+                               "candleFormat" : "midpoint"})
+    url = ''.join(["/v1/candles"])
+    conn.request("GET", url, params, headers)
+    conn_json = conn.getresponse().read()	
+    resp = json.loads(conn_json)
+    candles = resp['candles']	
+    print conn_json
 
-    candle_wma_1 = []
-    wma_denom_1 = (wma_period_1 * (wma_period_1 + 1)) / 2
-    candle_wma_2 = []
-    wma_denom_2 = (wma_period_2 * (wma_period_2 + 1)) / 2
-    i = 0
-
-    dates = []
-    date_label = []
-    prices = []
-
-    plt.clf()
-    plt.cla()
-
+## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
+def WMA(period=100, granularity='S5', pair='USD_JPY'):
+	wma_total = []
+	wma_period = []
+	wma = []
+    candle_prices = []
+    date_values = []
+    date_labels = []
+    candle_width = getGranularitySeconds(granularity)
+    min_candle = 10000 #set extreme opposite min and max to establish true min and max 
+    max_candle = 0 
+	
+	for i in range(1:period)	
+        for j in range(i):
+            wma_total[i] += candles[i - j]['highMid'] * (wma_period[i] - j)		
+		wma_denom[i] = (i * (i + 1)) / 2	
+        wma[i] = wma_total[i] / wma_denom[i]
+        candles[i].append(wma[i])
+		
     for candle in candles:
         candleTimeLabels = time.strptime(str(candle['time']),  '%Y-%m-%dT%H:%M:%S.%fZ')
         candleTimeValues = date2num(datetime.strptime(candle['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
-        date_label.append(str(candleTimeLabels[1]) + '-' +
-                          str(candleTimeLabels[2]) + '-' +
-                          str(candleTimeLabels[0]) + ' ' +
-                          str(candleTimeLabels[3]) + ':' +
-                          str(candleTimeLabels[4]) + ':' +
-                          str(candleTimeLabels[5]))
+        date_labels.append(str(candleTimeLabels[1]) + '-' +
+                           str(candleTimeLabels[2]) + '-' +
+                           str(candleTimeLabels[0]) + ' ' +
+                           str(candleTimeLabels[3]) + ':' +
+                           str(candleTimeLabels[4]) + ':' +
+                           str(candleTimeLabels[5])
+						   )
+        date_values.append(candleTimeValues)
+        candle_prices.append([candleTimeValues, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
 
-        dates.append(candleTimeValues)
-        prices.append([candleTimeValues, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
-
-        wma_total_1 = 0
-        wma_total_2 = 0
-
-        for j in range(wma_period_1):
-            wma_total_1 += candles[i - j]['highMid'] * (wma_period_1 - j)
-
-        for j in range(wma_period_2):
-            wma_total_2 += candles[i - j]['highMid'] * (wma_period_2 - j)
-
-        wma_1 = wma_total_1 / wma_denom_1
-        wma_2 = wma_total_2 / wma_denom_2
-        candle_wma_1.append(wma_1)
-        candle_wma_2.append(wma_2)
-        i += 1
+        if candle['closeMid'] < min_candle:
+            min_candle = candle['lowMid']
+        if candle['closeMid'] > max_candle:
+            max_candle = candle['highMid']
+    min_candle -= 0.1
+    max_candle += 0.1
+	
+	wma_graph(date_values, date_labels, candle_prices, min_candle, max_candle, pair, candle_width)
 
 #add functionality to take in an array of wma periods, and compare them all
 #against each other, with the following variables for AB testing:
@@ -145,27 +158,22 @@ def WMA(period=20, granularity='S5', pair='USD_JPY', wma_period_1=5, wma_period_
 # 3. number of direction changes within a time range (int, time) --> (int)
 # 4. difference in WMA periods (int, int) --> int
 
-        if candle['closeMid'] < min_candle:
-            min_candle = candle['lowMid']
-        if candle['closeMid'] > max_candle:
-            max_candle = candle['highMid']
-    min_candle -= 0.1
-    max_candle += 0.1
 
+def wma_graph(date_values, date_labels, candle_prices, min_candle, max_candle, pair, candle_width):
     plt.figure(1)
-    plt.axis([min(dates), max(dates), min_candle, max_candle])
+    plt.axis([min(date_values), max(date_values), min_candle, max_candle])
     plt.title('Bar Chart of ' + pair)
     ax = plt.subplot(212)
     plt.subplot(211)
-    plt.plot_date(dates, candle_wma_1, 'm-')
-    plt.xticks(np.arange(min(dates), max(dates), 0.1), date_label, rotation='vertical')
-    candlestick_ohlc(ax, prices, candlewidth / 1000, colorup='b', colordown='r')
-    plt.plot_date(dates, candle_wma_2, 'g-')
+    plt.plot_date(dates, candle_wma[0], 'm-')
+    plt.plot_date(dates, candle_wma[1], 'g-')
+    plt.xticks(np.arange(min(date_values), max(date_values), 0.1), date_labels, rotation='vertical')
+    candlestick_ohlc(ax, prices, candle_width / 1000, colorup='b', colordown='r')
     plt.legend()
     plt.show(block=False)
-
     plt.draw()
 
+	
 def trade():
     global lastTrade
     global shape
@@ -180,12 +188,8 @@ def trade():
     bottom_offset = -20.0
     top_unreal_pl = top_offset
 
-    conn = httplib.HTTPSConnection("api-fxpractice.oanda.com")
-
     while True:
-        conn.request("GET", "/v1/accounts/" + account_id, "", headers)
-        response = conn.getresponse()
-        resptext = response.read()
+        resptext = account()
         data = json.loads(resptext)
         unreal_pl = data['unrealizedPl']
 
@@ -194,7 +198,7 @@ def trade():
         lower.append(bottom_offset)
 
         seconds += 1
-        graph(seconds, unreal_pl, top_offset, bottom_offset, len(profit), shape)
+        plot_graph(seconds, unreal_pl, top_offset, bottom_offset, len(profit), shape)
         print unreal_pl
 
         if unreal_pl > top_unreal_pl:
@@ -220,7 +224,7 @@ def trade():
         time.sleep(0.2)
 
 
-def graph(seconds, profit, upper, lower, length, shape):
+def plot_graph(seconds, profit, upper, lower, length, shape):
     plt.plot(seconds, profit, shape, seconds, upper, 'g.', seconds, lower, 'r.', seconds, 0, 'm,')
     plt.ylabel('Unrealized P/L')
     plt.axis([-100 + length, length, -30, 50])
