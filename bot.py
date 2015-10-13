@@ -66,11 +66,13 @@ def order(pair, units, buysell):
     params = urllib.urlencode({"instrument": pair,
                                "units" : units,
                                "type" : "market",
-                               "side" : buysell})
+                               "side" : buysell
+							   })
 	url = ''.join(["/v1/accounts/", account_id, "/orders"])
     conn.request("POST", url, params, headers)
 	conn_json = conn.getresponse().read()	
     print conn_json
+	return conn_json
 
 
 def close():
@@ -79,6 +81,7 @@ def close():
     conn.request("DELETE", url, "", headers)
 	conn_json = conn.getresponse().read()	
     print conn_json
+	return conn_json
 
 
 def price():
@@ -88,6 +91,7 @@ def price():
     conn.request("GET", url, params, headers)
 	conn_json = conn.getresponse().read()	
     print conn_json
+	return conn_json
 
 
 def positions():
@@ -96,20 +100,23 @@ def positions():
     conn.request("GET", url, "", headers)
 	conn_json = conn.getresponse().read()	
     print conn_json
+	return conn_json
 
-def graph(period, granularity, pair):
+	
+def get_candles(period, granularity, pair):
     conn = httplib.HTTPSConnection(rest_practice)
     params = urllib.urlencode({"instrument": pair,
                                "count" : str(period + 1),
                                "granularity" : str(granularity),
-                               "candleFormat" : "midpoint"})
+                               "candleFormat" : "midpoint"
+							   })
     url = ''.join(["/v1/candles"])
     conn.request("GET", url, params, headers)
     conn_json = conn.getresponse().read()	
-    resp = json.loads(conn_json)
-    candles = resp['candles']	
     print conn_json
+	return conn_json
 
+	
 ## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
 def WMA(period=100, granularity='S5', pair='USD_JPY'):
 	wma_total = []
@@ -119,16 +126,23 @@ def WMA(period=100, granularity='S5', pair='USD_JPY'):
     date_values = []
     date_labels = []
     candle_width = getGranularitySeconds(granularity)
+	graph_padding = 0.1 #so the graph is not touching top and bottom of the plot area
     min_candle = 10000 #set extreme opposite min and max to establish true min and max 
     max_candle = 0 
+	
+	conn_json = get_candles(period, granularity, pair)
+    resp = json.loads(conn_json)
+    candles = resp['candles']
+	candles_data = []
 	
 	for i in range(1:period)	
         for j in range(i):
             wma_total[i] += candles[i - j]['highMid'] * (wma_period[i] - j)		
 		wma_denom[i] = (i * (i + 1)) / 2	
         wma[i] = wma_total[i] / wma_denom[i]
-        candles[i].append(wma[i])
+        candles_data[i]['wma_' + str(i)] = wma[i]
 		
+	i = 0
     for candle in candles:
         candleTimeLabels = time.strptime(str(candle['time']),  '%Y-%m-%dT%H:%M:%S.%fZ')
         candleTimeValues = date2num(datetime.strptime(candle['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
@@ -141,16 +155,29 @@ def WMA(period=100, granularity='S5', pair='USD_JPY'):
 						   )
         date_values.append(candleTimeValues)
         candle_prices.append([candleTimeValues, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
-
+		
+		candles_data[i]['date_label'] = date_labels[i]
+		candles_data[i]['date_value'] = date_values[i]
+		candles_data[i]['price'] = candles_prices[i]
+		
         if candle['closeMid'] < min_candle:
             min_candle = candle['lowMid']
         if candle['closeMid'] > max_candle:
             max_candle = candle['highMid']
-    min_candle -= 0.1
-    max_candle += 0.1
-	
-	wma_graph(date_values, date_labels, candle_prices, min_candle, max_candle, pair, candle_width)
+		
+		i += 1
 
+			
+    min_candle -= graph_padding
+    max_candle += graph_padding
+	
+	for i in candles_data:
+		wma_graph(date_values, date_labels, candle_prices, min_candle, max_candle, pair, candle_width)
+
+		
+def compare_wma():
+	pass
+	
 #add functionality to take in an array of wma periods, and compare them all
 #against each other, with the following variables for AB testing:
 # 1. distance between the direction changes (int, int) --> (int)
@@ -168,7 +195,7 @@ def wma_graph(date_values, date_labels, candle_prices, min_candle, max_candle, p
     plt.plot_date(dates, candle_wma[0], 'm-')
     plt.plot_date(dates, candle_wma[1], 'g-')
     plt.xticks(np.arange(min(date_values), max(date_values), 0.1), date_labels, rotation='vertical')
-    candlestick_ohlc(ax, prices, candle_width / 1000, colorup='b', colordown='r')
+    candlestick_ohlc(ax, candle_prices, candle_width / 1000, colorup='b', colordown='r')
     plt.legend()
     plt.show(block=False)
     plt.draw()
