@@ -24,7 +24,7 @@ stream_trade = "stream-fxtrade.oanda.com"
 
 access_token = 'a0fce8d9a47637254bdef08a4e059641-b03e0bd3095df91751f3fbb7592f2579'
 account_id = '270129'
-headers = {"Content-Type" : "application/x-www-form-urlencoded", 'Authorization' : 'Bearer ' + access_token}
+headers = {'Content-Type' : 'application/x-www-form-urlencoded', 'Authorization' : 'Bearer ' + access_token}
 lastTrade = "buy"
 shape = 'cD'
 tradeSize = "30000"
@@ -135,10 +135,10 @@ def WMA(period=100, granularity='S5', pair='USD_JPY'):
     candles = resp['candles']
 	candles_data = []
 	
-	for i in range(1:period)	
+	for i in range(1:period)
         for j in range(i):
-            wma_total[i] += candles[i - j]['highMid'] * (wma_period[i] - j)		
-		wma_denom[i] = (i * (i + 1)) / 2	
+            wma_total[i] += candles[i - j]['highMid'] * (wma_period[i] - j)
+		wma_denom[i] = (i * (i + 1)) / 2
         wma[i] = wma_total[i] / wma_denom[i]
         candles_data[i]['wma_' + str(i)] = wma[i]
 		
@@ -160,24 +160,24 @@ def WMA(period=100, granularity='S5', pair='USD_JPY'):
 		candles_data[i]['date_value'] = date_values[i]
 		candles_data[i]['price'] = candles_prices[i]
 		
-        if candle['closeMid'] < min_candle:
-            min_candle = candle['lowMid']
-        if candle['closeMid'] > max_candle:
-            max_candle = candle['highMid']
+	compare_wma(candles_data)
 		
-		i += 1
-
+#        if candle['closeMid'] < min_candle:
+#            min_candle = candle['lowMid']
+#        if candle['closeMid'] > max_candle:
+#            max_candle = candle['highMid']
+		
+#		i += 1
 			
-    min_candle -= graph_padding
-    max_candle += graph_padding
+#    min_candle -= graph_padding
+#    max_candle += graph_padding
 	
-	for i in candles_data:
-		wma_graph(date_values, date_labels, candle_prices, min_candle, max_candle, pair, candle_width)
+#	wma_graph(date_values, date_labels, candle_prices, min_candle, max_candle, pair, candle_width)
+	
 
 		
 def compare_wma():
-	pass
-	
+
 #add functionality to take in an array of wma periods, and compare them all
 #against each other, with the following variables for AB testing:
 # 1. distance between the direction changes (int, int) --> (int)
