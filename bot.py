@@ -58,7 +58,7 @@ def account():
     return conn_json
 
 
-def order(pair, units, buysell):
+def order(pair='USD_JPY', units='10000', buysell='buy'):
     now = datetime.datetime.now()
     expire = now + datetime.timedelta(days=1)
     expire = expire.isoformat('T') + "Z"
@@ -108,7 +108,8 @@ def get_candles(period, granularity, pair):
     params = urllib.urlencode({"instrument": pair,
                                "count": str(period + 1),
                                "granularity": str(granularity),
-                               "candleFormat": "midpoint"})
+                               "candleFormat": "midpoint"
+                               })
     print params
     url = ''.join(["/v1/candles"])
     conn.request("GET", url, params, headers)
@@ -128,9 +129,7 @@ def WMA(period=100, granularity='S5', pair='USD_JPY'):
     candle_width = getGranularitySeconds(granularity)
     graph_padding = 0.1 #so the graph is not touching top and bottom of the plot area
     min_candle = 10000 #set extreme opposite min and max to establish true min and max
-    max_candle = 0 
-
-    print pair
+    max_candle = 0
 
     conn_json = get_candles(period, granularity, pair)
     resp = json.loads(conn_json)
