@@ -5,7 +5,6 @@ import datetime
 import time
 
 from pylab import *
-from datetime import datetime
 from matplotlib.dates import  DateFormatter, WeekdayLocator, HourLocator, \
      DayLocator, MONDAY
 from matplotlib.finance import candlestick,\
@@ -58,7 +57,7 @@ def account():
     return conn_json
 
 
-def order(pair='USD_JPY', units='10000', buysell='buy'):
+def order(pair='USD_JPY', units='1000', buysell='buy'):
     now = datetime.datetime.now()
     expire = now + datetime.timedelta(days=1)
     expire = expire.isoformat('T') + "Z"
@@ -105,7 +104,7 @@ def positions():
 	
 def get_candles(period, granularity, pair):
     conn = httplib.HTTPSConnection(rest_practice)
-    params = urllib.urlencode({"instrument": pair,
+    params = urllib.urlencode({"instruments": pair,
                                "count": str(period + 1),
                                "granularity": str(granularity),
                                "candleFormat": "midpoint"
