@@ -5,6 +5,7 @@ import datetime
 import time
 
 from pylab import *
+from datetime import datetime
 from matplotlib.dates import  DateFormatter, WeekdayLocator, HourLocator, \
      DayLocator, MONDAY
 from matplotlib.finance import candlestick,\
@@ -85,9 +86,8 @@ def close():
 
 def price(pair='USD_JPY'):
     conn = httplib.HTTPSConnection(rest_practice)
-    params = urllib.urlencode({"instrument": pair})
-    url = ''.join(["/v1/prices"])
-    conn.request("GET", url, params, headers)
+    url = ''.join(["/v1/prices?instruments=", pair])
+    conn.request("GET", url, "", headers)
     conn_json = conn.getresponse().read()
     print conn_json
     return conn_json
@@ -104,15 +104,10 @@ def positions():
 	
 def get_candles(period, granularity, pair):
     conn = httplib.HTTPSConnection(rest_practice)
-    params = urllib.urlencode({"instruments": pair,
-                               "count": str(period + 1),
-                               "granularity": str(granularity),
-                               "candleFormat": "midpoint"
-                               })
-    print params
-    url = ''.join(["/v1/candles"])
-    conn.request("GET", url, params, headers)
-    conn_json = conn.getresponse().read()	
+    url = ''.join(["/v1/candles?instrument=", pair, "&count=", str(period + 1), \
+          "&granularity=", str(granularity), "&candleFormat=midpoint"])
+    conn.request("GET", url, "", headers)
+    conn_json = conn.getresponse().read()
     print conn_json
     return conn_json
 
@@ -133,14 +128,20 @@ def WMA(period=100, granularity='S5', pair='USD_JPY'):
     conn_json = get_candles(period, granularity, pair)
     resp = json.loads(conn_json)
     candles = resp['candles']
-    candles_data = []
+    candles_data_array = []
+    candles_data = {}
 	
     for i in range(period):
+        wma_total.append(0)
         for j in range(i):
-            wma_total[i] += candles[i - j]['highMid'] * (wma_period[i] - j)
-        wma_denom[i] = (i * (i + 1)) / 2
-        wma[i] = wma_total[i] / wma_denom[i]
-        candles_data[i]['wma_' + str(i)] = wma[i]
+            wma_total[i] += candles[i - j]['highMid'] * (i - j)
+        wma_denom.append((i * (i + 1)) / 2)
+        if wma_denom[i] != 0:
+            wma.append(wma_total[i] / wma_denom[i])
+        else:
+            wma.append(0)
+        candles_data['wma_' + str(i)] = wma[i]
+        candles_data_array.append(candles_data)
 		
     i = 0
     for candle in candles:
@@ -156,9 +157,9 @@ def WMA(period=100, granularity='S5', pair='USD_JPY'):
         date_values.append(candleTimeValues)
         candle_prices.append([candleTimeValues, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
 		
-        candles_data[i]['date_label'] = date_labels[i]
-        candles_data[i]['date_value'] = date_values[i]
-        candles_data[i]['price'] = candles_prices[i]
+        candles_data_array[i]['date_label'] = date_labels[i]
+        candles_data_array[i]['date_value'] = date_values[i]
+        candles_data_array[i]['price'] = candle_prices[i]
 		
     compare_wma(candles_data)
 		
