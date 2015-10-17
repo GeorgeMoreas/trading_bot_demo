@@ -113,10 +113,6 @@ def get_candles(period, granularity, pair):
 
 ## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
 def WMA(period=5, granularity='S5', pair='USD_JPY'):
-    wma_total = []
-    wma_period = []
-    wma_denom = []
-    wma = []
     candle_prices = []
     date_values = []
     date_labels = []
@@ -133,22 +129,21 @@ def WMA(period=5, granularity='S5', pair='USD_JPY'):
 
     for i in range(period):
         print "i, period", i, period
-        wma_total.append(0)
-        print str(wma_total)
+        wma_total = 0
         for j in range(i):
-            wma_total[i] += candles[i - j]['highMid'] * (i - j)
+            wma_total += candles[i - j]['highMid'] * (i - j)
             print "j, i, wma_total[i], highMid * (i - j)", \
-                str(j), str(i), str(wma_total[i]), str(candles[i - j]['highMid'] * (i - j))
-        wma_denom.append((i * (i + 1)) / 2)
-        print "wma_denom[i]", wma_denom[i]
-        if wma_denom[i] != 0:
-            wma.append(wma_total[i] / wma_denom[i])
-            print "wma_total[i] / wma_denom[i]", str(wma_total[i] / wma_denom[i])
+                str(j), str(i), str(wma_total), str(candles[i - j]['highMid'] * (i - j))
+        wma_denom = (i * (i + 1)) / 2
+        print "wma_denom", wma_denom
+        if wma_denom != 0:
+            wma = wma_total / wma_denom
+            print "wma_total / wma_denom", str(wma_total / wma_denom)
         else:
-            wma.append(0)
+            wma = 0
         print "str(wma)", str(wma)
-        candles_data['wma_' + str(i)] = wma[i]
-        print "str(wma[i])", str(wma[i])
+        candles_data['wma_' + str(i)] = wma
+        print "str(wma)", str(wma)
         candles_data_array.append(candles_data)
         print "candles_data", str(candles_data)
 		
