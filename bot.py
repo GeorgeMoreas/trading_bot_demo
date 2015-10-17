@@ -112,7 +112,7 @@ def get_candles(period, granularity, pair):
     return conn_json
 
 ## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
-def WMA(period=100, granularity='S5', pair='USD_JPY'):
+def WMA(period=5, granularity='S5', pair='USD_JPY'):
     wma_total = []
     wma_period = []
     wma_denom = []
@@ -130,18 +130,27 @@ def WMA(period=100, granularity='S5', pair='USD_JPY'):
     candles = resp['candles']
     candles_data_array = []
     candles_data = {}
-	
+
     for i in range(period):
+        print "i, period", i, period
         wma_total.append(0)
+        print str(wma_total)
         for j in range(i):
             wma_total[i] += candles[i - j]['highMid'] * (i - j)
+            print "j, i, wma_total[i], highMid * (i - j)", \
+                str(j), str(i), str(wma_total[i]), str(candles[i - j]['highMid'] * (i - j))
         wma_denom.append((i * (i + 1)) / 2)
+        print "wma_denom[i]", wma_denom[i]
         if wma_denom[i] != 0:
             wma.append(wma_total[i] / wma_denom[i])
+            print "wma_total[i] / wma_denom[i]", str(wma_total[i] / wma_denom[i])
         else:
             wma.append(0)
+        print "str(wma)", str(wma)
         candles_data['wma_' + str(i)] = wma[i]
+        print "str(wma[i])", str(wma[i])
         candles_data_array.append(candles_data)
+        print "candles_data", str(candles_data)
 		
     i = 0
     for candle in candles:
@@ -161,7 +170,7 @@ def WMA(period=100, granularity='S5', pair='USD_JPY'):
         candles_data_array[i]['date_value'] = date_values[i]
         candles_data_array[i]['price'] = candle_prices[i]
 		
-    compare_wma(candles_data)
+    compare_wma(candles_data_array)
 		
 #        if candle['closeMid'] < min_candle:
 #            min_candle = candle['lowMid']
@@ -177,8 +186,11 @@ def WMA(period=100, granularity='S5', pair='USD_JPY'):
 	
 
 		
-def compare_wma(candles_data):
+def compare_wma(candles_data_array):
     pass
+    for candle in candles_data_array:
+        print candle
+        print ''
 
 #add functionality to take in an array of wma periods, and compare them all
 #against each other, with the following variables for AB testing:
