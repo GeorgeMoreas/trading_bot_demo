@@ -101,15 +101,47 @@ def positions():
     print conn_json
     return conn_json
 
-	
+
 def get_candles(period, granularity, pair):
     conn = httplib.HTTPSConnection(rest_practice)
-    url = ''.join(["/v1/candles?instrument=", pair, "&count=", str(period + 1), \
+    url = ''.join(["/v1/candles?instrument=", pair, "&count=", str(period), \
           "&granularity=", str(granularity), "&candleFormat=midpoint"])
     conn.request("GET", url, "", headers)
     conn_json = conn.getresponse().read()
     print conn_json
     return conn_json
+
+
+def w(period=5, gran='S5', pair='USD_JPY'):
+    conn_json = get_candles(period, gran, pair)
+    resp = json.loads(conn_json)
+    candles = resp['candles']
+    candle_prices = []
+    date_values = []
+    date_labels = []
+    candles_data = []
+
+    keys = ['date_label', 'date_value', 'price']
+
+    i = 0
+    for candle in candles:
+        candle_time_labels = time.strptime(str(candle['time']),  '%Y-%m-%dT%H:%M:%S.%fZ')
+        candle_time_values = date2num(datetime.strptime(candle['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
+        date_labels.append(str(candle_time_labels[1]) + '-' +
+                           str(candle_time_labels[2]) + '-' +
+                           str(candle_time_labels[0]) + ' ' +
+                           str(candle_time_labels[3]) + ':' +
+                           str(candle_time_labels[4]) + ':' +
+                           str(candle_time_labels[5]))
+        date_values.append(candle_time_values)
+        candle_prices.append([candle_time_values, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
+
+        current_candle_data = [date_labels[i], date_values[i], candle_prices[i]]
+        candles_data.append(dict(zip(keys, current_candle_data)))
+        i += 1
+
+    print candles_data
+
 
 ## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
 def WMA(period=5, granularity='S5', pair='USD_JPY'):
@@ -127,28 +159,30 @@ def WMA(period=5, granularity='S5', pair='USD_JPY'):
     candles_data_array = []
     candles_data = {}
 
-    for i in range(period):
-        print "i, period", i, period
-        wma_total = 0
-        for j in range(i):
-            wma_total += candles[i - j]['highMid'] * (i - j)
-            print "j, i, wma_total[i], highMid * (i - j)", \
-                str(j), str(i), str(wma_total), str(candles[i - j]['highMid'] * (i - j))
-        wma_denom = (i * (i + 1)) / 2
-        print "wma_denom", wma_denom
-        if wma_denom != 0:
-            wma = wma_total / wma_denom
-            print "wma_total / wma_denom", str(wma_total / wma_denom)
-        else:
-            wma = 0
-        print "str(wma)", str(wma)
-        candles_data['wma_' + str(i)] = wma
-        print "str(wma)", str(wma)
+    k = 0
+    for candle in candles:
+
+        for i in range(period):
+            print "i, period", i, period
+            wma_total = 0
+            for j in range(i):
+                wma_total += candles[i - j]['highMid'] * (i - j)
+                print "j, i, wma_total[i], highMid * (i - j)", \
+                    str(j), str(i), str(wma_total), str(candles[i - j]['highMid'] * (i - j))
+            wma_denom = (i * (i + 1)) / 2
+            print "wma_denom", wma_denom
+            if wma_denom != 0:
+                wma = wma_total / wma_denom
+                print "wma_total / wma_denom", str(wma_total / wma_denom)
+            else:
+                wma = 0
+            print "str(wma)", str(wma)
+            candles_data['wma_' + str(i)] = wma
+            print "str(wma)", str(wma)
+
         candles_data_array.append(candles_data)
         print "candles_data", str(candles_data)
-		
-    i = 0
-    for candle in candles:
+
         candleTimeLabels = time.strptime(str(candle['time']),  '%Y-%m-%dT%H:%M:%S.%fZ')
         candleTimeValues = date2num(datetime.strptime(candle['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
         date_labels.append(str(candleTimeLabels[1]) + '-' +
@@ -161,9 +195,11 @@ def WMA(period=5, granularity='S5', pair='USD_JPY'):
         date_values.append(candleTimeValues)
         candle_prices.append([candleTimeValues, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
 		
-        candles_data_array[i]['date_label'] = date_labels[i]
-        candles_data_array[i]['date_value'] = date_values[i]
-        candles_data_array[i]['price'] = candle_prices[i]
+        candles_data_array[k]['date_label'] = date_labels[k]
+        candles_data_array[k]['date_value'] = date_values[k]
+        candles_data_array[k]['price'] = candle_prices[k]
+
+        k += 1
 		
     compare_wma(candles_data_array)
 		
@@ -184,6 +220,7 @@ def WMA(period=5, granularity='S5', pair='USD_JPY'):
 def compare_wma(candles_data_array):
     pass
     for candle in candles_data_array:
+        print ''
         print candle
         print ''
 
