@@ -121,26 +121,42 @@ def w(period=5, gran='S5', pair='USD_JPY'):
     date_labels = []
     candles_data = []
 
-    keys = ['date_label', 'date_value', 'price']
+    keys = ['date_label', 'date_value', 'price', 'wma']
 
     i = 0
     for candle in candles:
         candle_time_labels = time.strptime(str(candle['time']),  '%Y-%m-%dT%H:%M:%S.%fZ')
-        candle_time_values = date2num(datetime.strptime(candle['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
-        date_labels.append(str(candle_time_labels[1]) + '-' +
+        candle_date_values = date2num(datetime.strptime(candle['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
+        candle_date_labels = (str(candle_time_labels[1]) + '-' +
                            str(candle_time_labels[2]) + '-' +
                            str(candle_time_labels[0]) + ' ' +
                            str(candle_time_labels[3]) + ':' +
                            str(candle_time_labels[4]) + ':' +
                            str(candle_time_labels[5]))
-        date_values.append(candle_time_values)
-        candle_prices.append([candle_time_values, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
+        candle_prices = [candle_date_values, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']]
 
-        current_candle_data = [date_labels[i], date_values[i], candle_prices[i]]
+        candle_wma = []
+        for wma_period in range(2, period + 1):
+            wma_total = 0
+            wma_denominator = (wma_period * (wma_period + 1)) / 2
+
+            for j in range(wma_period):
+                wma_total += candles[i - j - 1]['highMid'] * (wma_period - j)
+
+            if wma_denominator != 0:
+                wma = wma_total / wma_denominator
+            else:
+                wma = 0
+            candle_wma.append(wma)
+
+        current_candle_data = [candle_date_labels, candle_date_values, candle_prices, candle_wma]
         candles_data.append(dict(zip(keys, current_candle_data)))
         i += 1
 
-    print candles_data
+    for k in candles_data:
+        print ''
+        print k
+
 
 
 ## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
