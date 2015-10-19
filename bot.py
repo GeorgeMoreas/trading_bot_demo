@@ -112,13 +112,10 @@ def get_candles(period, granularity, pair):
     return conn_json
 
 
-def w(period=5, gran='S5', pair='USD_JPY'):
+def w(period=30, gran='M5', pair='USD_JPY', wma_period_max=10):
     conn_json = get_candles(period, gran, pair)
     resp = json.loads(conn_json)
     candles = resp['candles']
-    candle_prices = []
-    date_values = []
-    date_labels = []
     candles_data = []
 
     keys = ['date_label', 'date_value', 'price', 'wma']
@@ -136,18 +133,19 @@ def w(period=5, gran='S5', pair='USD_JPY'):
         candle_prices = [candle_date_values, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']]
 
         candle_wma = []
-        for wma_period in range(2, period + 1):
-            wma_total = 0
-            wma_denominator = (wma_period * (wma_period + 1)) / 2
 
-            for j in range(wma_period):
-                wma_total += candles[i - j - 1]['highMid'] * (wma_period - j)
+        if i > wma_period_max - 1:
+            for wma_period in range(2, wma_period_max):
+                wma_total = 0
+                wma_denominator = (wma_period * (wma_period + 1)) / 2
 
-            if wma_denominator != 0:
-                wma = wma_total / wma_denominator
-            else:
-                wma = 0
-            candle_wma.append(wma)
+                for j in range(wma_period):
+                    wma_total += candles[i - j - 1]['closeMid'] * (wma_period - j)
+                if wma_denominator != 0:
+                    wma = float("{0:.4f}".format(wma_total / wma_denominator))
+                else:
+                    wma = 0
+                candle_wma.append(wma)
 
         current_candle_data = [candle_date_labels, candle_date_values, candle_prices, candle_wma]
         candles_data.append(dict(zip(keys, current_candle_data)))
@@ -157,6 +155,40 @@ def w(period=5, gran='S5', pair='USD_JPY'):
         print ''
         print k
 
+    x1 = []
+    x2 = []
+    x3 = []
+    xlabels = []
+    y1 = []
+    y2 = []
+    y3 = []
+
+    l = 0
+    for a in candles_data:
+        x1.append(a['price'][0])
+        if l > wma_period_max - 1:
+            x2.append(a['price'][0])
+            x3.append(a['price'][0])
+            y2.append(a['wma'][0])
+            y3.append(a['wma'][1])
+        y1.append(a['price'][4])
+        xlabels.append(a['date_label'])
+        l += 1
+
+    #fig, ax = plt.subplots()
+
+    plt.axis([min(x1), max(x1), min(y1), max(y1)])
+    plt.plot(x1, y1, 'r-', label='price')
+    plt.plot(x2, y2, 'g-', label='wma 2')
+    plt.plot(x3, y3, 'b-', label='wma 3')
+    plt.legend(loc='upper left')
+    plt.xticks(x1, xlabels, rotation='vertical')
+    plt.yticks(y1, y1, rotation='horizontal')
+    #fig.canvas.draw()
+    #ax.set_xticklabels(xlabels)
+    #ax.set_yticklabels(y1)
+    plt.draw()
+    plt.show(block=False)
 
 
 ## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
@@ -182,9 +214,9 @@ def WMA(period=5, granularity='S5', pair='USD_JPY'):
             print "i, period", i, period
             wma_total = 0
             for j in range(i):
-                wma_total += candles[i - j]['highMid'] * (i - j)
-                print "j, i, wma_total[i], highMid * (i - j)", \
-                    str(j), str(i), str(wma_total), str(candles[i - j]['highMid'] * (i - j))
+                wma_total += candles[i - j]['closeMid'] * (i - j)
+                print "j, i, wma_total[i], closeMid * (i - j)", \
+                    str(j), str(i), str(wma_total), str(candles[i - j]['closeMid'] * (i - j))
             wma_denom = (i * (i + 1)) / 2
             print "wma_denom", wma_denom
             if wma_denom != 0:
