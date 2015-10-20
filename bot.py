@@ -1,8 +1,8 @@
 import httplib
 import urllib
 import json
-import datetime
 import time
+import threading
 
 from pylab import *
 from datetime import datetime
@@ -59,15 +59,15 @@ def account():
 
 
 def order(pair='USD_JPY', units='1000', buysell='buy'):
-    now = datetime.datetime.now()
-    expire = now + datetime.timedelta(days=1)
-    expire = expire.isoformat('T') + "Z"
+    now = datetime.now()
+#    expire = now + datetime.timedelta(days=1)
+#    expire = expire.isoformat('T') + "Z"
     conn = httplib.HTTPSConnection(rest_practice)
     params = urllib.urlencode({"instrument": pair,
-                               "units" : units,
-                               "type" : "market",
-                               "side" : buysell
-							   })
+                               "units": units,
+                               "type": "market",
+                               "side": buysell
+                               })
     url = ''.join(["/v1/accounts/", account_id, "/orders"])
     conn.request("POST", url, params, headers)
     conn_json = conn.getresponse().read()
@@ -108,11 +108,15 @@ def get_candles(period, granularity, pair):
           "&granularity=", str(granularity), "&candleFormat=midpoint"])
     conn.request("GET", url, "", headers)
     conn_json = conn.getresponse().read()
-    print conn_json
+#    print conn_json
     return conn_json
 
 
-def w(period=30, gran='M5', pair='USD_JPY', wma_period_max=10):
+def w(period=30, gran='S5', pair='USD_JPY', wma_period_max=10):
+    t = threading.Timer(5.0, w)
+    t.daemon = True
+    t.start()
+
     conn_json = get_candles(period, gran, pair)
     resp = json.loads(conn_json)
     candles = resp['candles']
@@ -151,9 +155,9 @@ def w(period=30, gran='M5', pair='USD_JPY', wma_period_max=10):
         candles_data.append(dict(zip(keys, current_candle_data)))
         i += 1
 
-    for k in candles_data:
-        print ''
-        print k
+#    for k in candles_data:
+#        print ''
+#        print k
 
     x1 = []
     x2 = []
@@ -175,7 +179,7 @@ def w(period=30, gran='M5', pair='USD_JPY', wma_period_max=10):
         xlabels.append(a['date_label'])
         l += 1
 
-    #fig, ax = plt.subplots()
+    plt.clf()
 
     plt.axis([min(x1), max(x1), min(y1), max(y1)])
     plt.plot(x1, y1, 'r-', label='price')
@@ -184,11 +188,35 @@ def w(period=30, gran='M5', pair='USD_JPY', wma_period_max=10):
     plt.legend(loc='upper left')
     plt.xticks(x1, xlabels, rotation='vertical')
     plt.yticks(y1, y1, rotation='horizontal')
-    #fig.canvas.draw()
-    #ax.set_xticklabels(xlabels)
-    #ax.set_yticklabels(y1)
     plt.draw()
     plt.show(block=False)
+
+    last_wma_short = candles_data[len(candles_data) - 1]['wma'][0]
+    last_wma_long = candles_data[len(candles_data) - 1]['wma'][1]
+
+    check_wma_crossing(last_wma_short, last_wma_long)
+
+
+current_wma_state = ''
+current_state_changed = False
+
+
+def check_wma_crossing(s, l):
+    global current_wma_state
+    global current_state_changed
+
+    current_state_changed = False
+
+    if current_wma_state == 'A':
+        if s < l:
+            current_wma_state = 'B'  # B = s is below
+            current_state_changed = True
+            order("USD_JPY", 10000, 'buy')
+    else:
+        if s > l:
+            current_wma_state = 'A'  # A = s is above
+            current_state_changed = True
+            order("USD_JPY", 10000, 'sell')
 
 
 ## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
@@ -294,7 +322,7 @@ def wma_graph(date_values, date_labels, candle_prices, min_candle, max_candle, p
     plt.show(block=False)
     plt.draw()
 
-	
+
 def trade():
     global lastTrade
     global shape
