@@ -154,11 +154,14 @@ def w(period=30, gran='S5', pair='USD_JPY', wma_period_max=10):
         current_candle_data = [candle_date_labels, candle_date_values, candle_prices, candle_wma]
         candles_data.append(dict(zip(keys, current_candle_data)))
         i += 1
-
+		
+	graph_wma(candles_data, pair)
+		
 #    for k in candles_data:
 #        print ''
 #        print k
 
+def graph_wma(candles_data, pair)
     x1 = []
     x2 = []
     x3 = []
@@ -166,6 +169,7 @@ def w(period=30, gran='S5', pair='USD_JPY', wma_period_max=10):
     y1 = []
     y2 = []
     y3 = []
+	candle_width = 10
 
     l = 0
     for a in candles_data:
@@ -181,13 +185,17 @@ def w(period=30, gran='S5', pair='USD_JPY', wma_period_max=10):
 
     plt.clf()
 
+    plt.title('Bar Chart of ' + pair)
+    ax = plt.subplot(212)
+    plt.subplot(211)
     plt.axis([min(x1), max(x1), min(y1), max(y1)])
-    plt.plot(x1, y1, 'r-', label='price')
+    candlestick_ohlc(ax, y1, candle_width, colorup='b', colordown='r')
+#    plt.plot(x1, y1, 'r-', label='price')
     plt.plot(x2, y2, 'g-', label='wma 2')
     plt.plot(x3, y3, 'b-', label='wma 3')
     plt.legend(loc='upper left')
-    plt.xticks(x1, xlabels, rotation='vertical')
-    plt.yticks(y1, y1, rotation='horizontal')
+    plt.xticks(np.arange(min(x1), max(x1), 0.1), xlabels, rotation='vertical')
+    plt.yticks(np.arange(min(y1), max(y1), 0.1), y1, rotation='horizontal')
     plt.draw()
     plt.show(block=False)
 
@@ -218,80 +226,6 @@ def check_wma_crossing(s, l):
             current_state_changed = True
             order("USD_JPY", 10000, 'sell')
 
-
-## Calculates the WMA over 'period' candles of size 'granularity' for pair 'pair'
-def WMA(period=5, granularity='S5', pair='USD_JPY'):
-    candle_prices = []
-    date_values = []
-    date_labels = []
-    candle_width = getGranularitySeconds(granularity)
-    graph_padding = 0.1 #so the graph is not touching top and bottom of the plot area
-    min_candle = 10000 #set extreme opposite min and max to establish true min and max
-    max_candle = 0
-
-    conn_json = get_candles(period, granularity, pair)
-    resp = json.loads(conn_json)
-    candles = resp['candles']
-    candles_data_array = []
-    candles_data = {}
-
-    k = 0
-    for candle in candles:
-
-        for i in range(period):
-            print "i, period", i, period
-            wma_total = 0
-            for j in range(i):
-                wma_total += candles[i - j]['closeMid'] * (i - j)
-                print "j, i, wma_total[i], closeMid * (i - j)", \
-                    str(j), str(i), str(wma_total), str(candles[i - j]['closeMid'] * (i - j))
-            wma_denom = (i * (i + 1)) / 2
-            print "wma_denom", wma_denom
-            if wma_denom != 0:
-                wma = wma_total / wma_denom
-                print "wma_total / wma_denom", str(wma_total / wma_denom)
-            else:
-                wma = 0
-            print "str(wma)", str(wma)
-            candles_data['wma_' + str(i)] = wma
-            print "str(wma)", str(wma)
-
-        candles_data_array.append(candles_data)
-        print "candles_data", str(candles_data)
-
-        candleTimeLabels = time.strptime(str(candle['time']),  '%Y-%m-%dT%H:%M:%S.%fZ')
-        candleTimeValues = date2num(datetime.strptime(candle['time'], '%Y-%m-%dT%H:%M:%S.%fZ'))
-        date_labels.append(str(candleTimeLabels[1]) + '-' +
-                           str(candleTimeLabels[2]) + '-' +
-                           str(candleTimeLabels[0]) + ' ' +
-                           str(candleTimeLabels[3]) + ':' +
-                           str(candleTimeLabels[4]) + ':' +
-                           str(candleTimeLabels[5])
-						   )
-        date_values.append(candleTimeValues)
-        candle_prices.append([candleTimeValues, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']])
-		
-        candles_data_array[k]['date_label'] = date_labels[k]
-        candles_data_array[k]['date_value'] = date_values[k]
-        candles_data_array[k]['price'] = candle_prices[k]
-
-        k += 1
-		
-    compare_wma(candles_data_array)
-		
-#        if candle['closeMid'] < min_candle:
-#            min_candle = candle['lowMid']
-#        if candle['closeMid'] > max_candle:
-#            max_candle = candle['highMid']
-		
-#		i += 1
-			
-#    min_candle -= graph_padding
-#    max_candle += graph_padding
-	
-#	wma_graph(date_values, date_labels, candle_prices, min_candle, max_candle, pair, candle_width)
-	
-
 		
 def compare_wma(candles_data_array):
     pass
@@ -307,85 +241,4 @@ def compare_wma(candles_data_array):
 # 3. number of direction changes within a time range (int, time) --> (int)
 # 4. difference in WMA periods (int, int) --> int
 
-
-def wma_graph(date_values, date_labels, candle_prices, min_candle, max_candle, pair, candle_width):
-    plt.figure(1)
-    plt.axis([min(date_values), max(date_values), min_candle, max_candle])
-    plt.title('Bar Chart of ' + pair)
-    ax = plt.subplot(212)
-    plt.subplot(211)
-    plt.plot_date(dates, candle_wma[0], 'm-')
-    plt.plot_date(dates, candle_wma[1], 'g-')
-    plt.xticks(np.arange(min(date_values), max(date_values), 0.1), date_labels, rotation='vertical')
-    candlestick_ohlc(ax, candle_prices, candle_width / 1000, colorup='b', colordown='r')
-    plt.legend()
-    plt.show(block=False)
-    plt.draw()
-
-
-def trade():
-    global lastTrade
-    global shape
-
-    seconds = 0
-
-    profit = []
-    upper = []
-    lower = []
-
-    top_offset = 20.0
-    bottom_offset = -20.0
-    top_unreal_pl = top_offset
-
-    while True:
-        resptext = account()
-        data = json.loads(resptext)
-        unreal_pl = data['unrealizedPl']
-
-        profit.append(unreal_pl)
-        upper.append(top_offset)
-        lower.append(bottom_offset)
-
-        seconds += 1
-        plot_graph(seconds, unreal_pl, top_offset, bottom_offset, len(profit), shape)
-        print unreal_pl
-
-        if unreal_pl > top_unreal_pl:
-            top_offset = 20.0 + unreal_pl
-            bottom_offset = -20.0 + (unreal_pl * 2)
-            top_unreal_pl = unreal_pl
-
-        if unreal_pl > top_offset or unreal_pl < bottom_offset:
-            if lastTrade == "buy":
-                lastTrade = "sell"
-                shape = 'bD'
-            else:
-                lastTrade = "buy"
-                shape = 'cD'
-            close()
-            order("USD_JPY", tradeSize, lastTrade)
-            account()
-
-            top_offset = 5.0
-            bottom_offset = -20.0
-            top_unreal_pl = top_offset
-
-        time.sleep(0.2)
-
-
-def plot_graph(seconds, profit, upper, lower, length, shape):
-    plt.plot(seconds, profit, shape, seconds, upper, 'g.', seconds, lower, 'r.', seconds, 0, 'm,')
-    plt.ylabel('Unrealized P/L')
-    plt.axis([-100 + length, length, -30, 50])
-    plt.draw()
-    plt.show(block=False)
-
-
-def init():
-    global lastTrade
-    close()
-    lastTrade = "buy"
-    shape = 'cD'
-    order("USD_JPY", tradeSize, lastTrade)
-    trade()
 
