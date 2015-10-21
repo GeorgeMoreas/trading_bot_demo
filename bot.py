@@ -155,6 +155,11 @@ def w(period=30, gran='S5', pair='USD_JPY', wma_period_max=10):
         candles_data.append(dict(zip(keys, current_candle_data)))
         i += 1
 		
+    last_wma_short = candles_data[len(candles_data) - 1]['wma'][0]
+    last_wma_long = candles_data[len(candles_data) - 1]['wma'][1]
+
+    check_wma_crossing(last_wma_short, last_wma_long, pair)
+	
 	graph_wma(candles_data, pair)
 		
 #    for k in candles_data:
@@ -199,19 +204,14 @@ def graph_wma(candles_data, pair)
     plt.draw()
     plt.show(block=False)
 
-    last_wma_short = candles_data[len(candles_data) - 1]['wma'][0]
-    last_wma_long = candles_data[len(candles_data) - 1]['wma'][1]
-
-    check_wma_crossing(last_wma_short, last_wma_long)
-
-
 current_wma_state = ''
 current_state_changed = False
 
 
-def check_wma_crossing(s, l):
+def check_wma_crossing(s, l, p):
     global current_wma_state
     global current_state_changed
+	lot_size = 10000
 
     current_state_changed = False
 
@@ -219,12 +219,14 @@ def check_wma_crossing(s, l):
         if s < l:
             current_wma_state = 'B'  # B = s is below
             current_state_changed = True
-            order("USD_JPY", 10000, 'buy')
+			close()
+            order(p, lot_size, 'buy')
     else:
         if s > l:
             current_wma_state = 'A'  # A = s is above
             current_state_changed = True
-            order("USD_JPY", 10000, 'sell')
+			close()
+            order(p, lot_size, 'sell')
 
 		
 def compare_wma(candles_data_array):
