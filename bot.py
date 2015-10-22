@@ -196,8 +196,8 @@ def graph_wma(candles_data, pair, wma_period_max):
     plt.plot(x2, y2, 'g-', label='wma 2')
     plt.plot(x3, y3, 'b-', label='wma 3')
     plt.legend(loc='upper left')
-    plt.xticks(np.arange(min(x1), max(x1), 0.1), xlabels, rotation='vertical')
-    plt.yticks(np.arange(min(y1), max(y1), 0.1), y1, rotation='horizontal')
+    plt.xticks(np.arange(min(x1), max(x1), 0.001), x1, rotation='vertical')
+    plt.yticks(np.arange(min(y1), max(y1), 0.001), y1, rotation='horizontal')
     plt.draw()
     plt.show(block=False)
 
