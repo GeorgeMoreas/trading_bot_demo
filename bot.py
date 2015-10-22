@@ -108,7 +108,8 @@ def get_candles(period, granularity, pair):
     return conn_json
 
 
-def w(period=100, gran='S5', pair='USD_JPY', wma_period_max=10):
+def w(period=100, gran='S5', pair='USD_JPY', wma_period_max=10, wma_period_short=2,
+      wma_period_long=50):
     t = threading.Timer(5.0, w)
     t.daemon = True
     t.start()
@@ -148,7 +149,7 @@ def w(period=100, gran='S5', pair='USD_JPY', wma_period_max=10):
 #                candle_wma.append(wma)
 ##
 
-        wma_periods_preset = [2, 50]
+        wma_periods_preset = [wma_period_short, wma_period_long]
 
         if i > wma_period_max - 1:
             for wma_period in wma_periods_preset:
