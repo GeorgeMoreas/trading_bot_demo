@@ -6,10 +6,6 @@ import threading
 
 from pylab import *
 from datetime import datetime
-from matplotlib.dates import  DateFormatter, WeekdayLocator, HourLocator, \
-     DayLocator, MONDAY
-from matplotlib.finance import candlestick,\
-     plot_day_summary, candlestick2
 
 import matplotlib.pyplot as plt
 from matplotlib.finance import candlestick_ohlc
@@ -154,19 +150,20 @@ def w(period=30, gran='S5', pair='USD_JPY', wma_period_max=10):
         current_candle_data = [candle_date_labels, candle_date_values, candle_prices, candle_wma]
         candles_data.append(dict(zip(keys, current_candle_data)))
         i += 1
-		
+
     last_wma_short = candles_data[len(candles_data) - 1]['wma'][0]
     last_wma_long = candles_data[len(candles_data) - 1]['wma'][1]
 
     check_wma_crossing(last_wma_short, last_wma_long, pair)
-	
-	graph_wma(candles_data, pair)
-		
+
+    graph_wma(candles_data, pair, wma_period_max)
+
 #    for k in candles_data:
 #        print ''
 #        print k
 
-def graph_wma(candles_data, pair)
+
+def graph_wma(candles_data, pair, wma_period_max):
     x1 = []
     x2 = []
     x3 = []
@@ -174,7 +171,7 @@ def graph_wma(candles_data, pair)
     y1 = []
     y2 = []
     y3 = []
-	candle_width = 10
+    candle_width = 10
 
     l = 0
     for a in candles_data:
@@ -191,11 +188,11 @@ def graph_wma(candles_data, pair)
     plt.clf()
 
     plt.title('Bar Chart of ' + pair)
-    ax = plt.subplot(212)
-    plt.subplot(211)
+#    ax = plt.subplot(212)
+#    plt.subplot(211)
     plt.axis([min(x1), max(x1), min(y1), max(y1)])
-    candlestick_ohlc(ax, y1, candle_width, colorup='b', colordown='r')
-#    plt.plot(x1, y1, 'r-', label='price')
+#    candlestick_ohlc(ax, y1, candle_width, colorup='b', colordown='r')
+    plt.plot(x1, y1, 'r-', label='price')
     plt.plot(x2, y2, 'g-', label='wma 2')
     plt.plot(x3, y3, 'b-', label='wma 3')
     plt.legend(loc='upper left')
@@ -211,7 +208,7 @@ current_state_changed = False
 def check_wma_crossing(s, l, p):
     global current_wma_state
     global current_state_changed
-	lot_size = 10000
+    lot_size = 10000
 
     current_state_changed = False
 
@@ -219,13 +216,17 @@ def check_wma_crossing(s, l, p):
         if s < l:
             current_wma_state = 'B'  # B = s is below
             current_state_changed = True
-			close()
+            if positions() is not []:
+                close()
+                account()
             order(p, lot_size, 'buy')
     else:
         if s > l:
             current_wma_state = 'A'  # A = s is above
             current_state_changed = True
-			close()
+            if positions() is not []:
+                close()
+                account()
             order(p, lot_size, 'sell')
 
 		
