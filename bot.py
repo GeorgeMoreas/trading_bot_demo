@@ -108,8 +108,8 @@ def get_candles(period, granularity, pair):
     return conn_json
 
 
-def w(period=100, gran='S5', pair='USD_JPY', wma_period_max=10, wma_period_short=3,
-      wma_period_long=21):
+def w(period=100, gran='S5', pair='USD_JPY', wma_period_short=5,
+      wma_period_long=15):
     t = threading.Timer(5.0, w)
     t.daemon = True
     t.start()
@@ -151,7 +151,7 @@ def w(period=100, gran='S5', pair='USD_JPY', wma_period_max=10, wma_period_short
 
         wma_periods_preset = [wma_period_short, wma_period_long]
 
-        if i > wma_period_max - 1:
+        if i > wma_period_long - 1:
             for wma_period in wma_periods_preset:
                 wma_total = 0
                 wma_denominator = (wma_period * (wma_period + 1)) / 2
@@ -173,14 +173,14 @@ def w(period=100, gran='S5', pair='USD_JPY', wma_period_max=10, wma_period_short
 
     check_wma_crossing(last_wma_short, last_wma_long, pair)
 
-    graph_wma(candles_data, pair, wma_period_max)
+    graph_wma(candles_data, pair, wma_period_long)
 
 #    for k in candles_data:
 #        print ''
 #        print k
 
 
-def graph_wma(candles_data, pair, wma_period_max):
+def graph_wma(candles_data, pair, wma_period_long):
     x1 = []
     x2 = []
     x3 = []
@@ -193,7 +193,7 @@ def graph_wma(candles_data, pair, wma_period_max):
     l = 0
     for a in candles_data:
         x1.append(a['price'][0])
-        if l > wma_period_max - 1:
+        if l > wma_period_long - 1:
             x2.append(a['price'][0])
             x3.append(a['price'][0])
             y2.append(a['wma'][0])
