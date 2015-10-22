@@ -108,7 +108,7 @@ def get_candles(period, granularity, pair):
     return conn_json
 
 
-def w(period=30, gran='S5', pair='USD_JPY', wma_period_max=10):
+def w(period=100, gran='S5', pair='USD_JPY', wma_period_max=10):
     t = threading.Timer(5.0, w)
     t.daemon = True
     t.start()
@@ -133,9 +133,25 @@ def w(period=30, gran='S5', pair='USD_JPY', wma_period_max=10):
         candle_prices = [candle_date_values, candle['openMid'], candle['highMid'], candle['lowMid'], candle['closeMid']]
 
         candle_wma = []
+##
+#        if i > wma_period_max - 1:
+#            for wma_period in range(2, wma_period_max):
+#                wma_total = 0
+#                wma_denominator = (wma_period * (wma_period + 1)) / 2
+#
+#                for j in range(wma_period):
+#                    wma_total += candles[i - j - 1]['closeMid'] * (wma_period - j)
+#                if wma_denominator != 0:
+#                    wma = float("{0:.4f}".format(wma_total / wma_denominator))
+#                else:
+#                    wma = 0
+#                candle_wma.append(wma)
+##
+
+        wma_periods_preset = [2, 50]
 
         if i > wma_period_max - 1:
-            for wma_period in range(2, wma_period_max):
+            for wma_period in wma_periods_preset:
                 wma_total = 0
                 wma_denominator = (wma_period * (wma_period + 1)) / 2
 
