@@ -71,9 +71,9 @@ def order(pair='USD_JPY', units='1000', buysell='buy'):
     return conn_json
 
 
-def close():
+def close(pair="USD_JPY"):
     conn = httplib.HTTPSConnection(rest_practice)
-    url = ''.join(["/v1/accounts/", account_id, "/positions"])
+    url = ''.join(["/v1/accounts/", account_id, "/positions/", pair])
     conn.request("DELETE", url, "", headers)
     conn_json = conn.getresponse().read()
     print conn_json
@@ -108,11 +108,13 @@ def get_candles(period, granularity, pair):
     return conn_json
 
 
-def w(period=100, gran='S5', pair='USD_JPY', wma_period_short=5,
-      wma_period_long=15):
-    t = threading.Timer(5.0, w)
+def w(period=100, gran='M1', pair='USD_JPY', wma_period_short=8, wma_period_long=13):
+    t = threading.Timer(60.0, w)
     t.daemon = True
     t.start()
+
+    account()
+    positions()
 
     conn_json = get_candles(period, gran, pair)
     resp = json.loads(conn_json)
@@ -171,16 +173,23 @@ def w(period=100, gran='S5', pair='USD_JPY', wma_period_short=5,
     last_wma_short = candles_data[len(candles_data) - 1]['wma'][0]
     last_wma_long = candles_data[len(candles_data) - 1]['wma'][1]
 
-    check_wma_crossing(last_wma_short, last_wma_long, pair)
+    last_price = candles_data[len(candles_data) - 1]['price'][4]
+    check_wma_crossing(last_price, last_wma_short, last_wma_long, pair)
 
-    graph_wma(candles_data, pair, wma_period_long)
+    graph_wma(candles_data, pair, wma_periods_preset)
+
+    print '--------------------'
+    print 'wma(', wma_period_short, '):', last_wma_short
+    print 'wma(', wma_period_long, '):', last_wma_long
+    print 'price:', last_price
+    print '--------------------'
 
 #    for k in candles_data:
 #        print ''
 #        print k
 
 
-def graph_wma(candles_data, pair, wma_period_long):
+def graph_wma(candles_data, pair, wma_periods_preset):
     x1 = []
     x2 = []
     x3 = []
@@ -193,7 +202,7 @@ def graph_wma(candles_data, pair, wma_period_long):
     l = 0
     for a in candles_data:
         x1.append(a['price'][0])
-        if l > wma_period_long - 1:
+        if l > wma_periods_preset[1] - 1:
             x2.append(a['price'][0])
             x3.append(a['price'][0])
             y2.append(a['wma'][0])
@@ -202,7 +211,6 @@ def graph_wma(candles_data, pair, wma_period_long):
         xlabels.append(a['date_label'])
         l += 1
 
-    plt.clf()
 
     plt.clf()
     plt.cla
@@ -212,8 +220,8 @@ def graph_wma(candles_data, pair, wma_period_long):
     plt.axis([min(x1), max(x1), min(y1), max(y1)])
 #    candlestick_ohlc(ax, y1, candle_width, colorup='b', colordown='r')
     plt.plot(x1, y1, 'r-', label='price')
-    plt.plot(x2, y2, 'g-', label='wma 2')
-    plt.plot(x3, y3, 'b-', label='wma 3')
+    plt.plot(x2, y2, 'g-', label='wma ' + str(wma_periods_preset[0]))
+    plt.plot(x3, y3, 'b-', label='wma ' + str(wma_periods_preset[1]))
     plt.legend(loc='upper left')
     plt.xticks(np.arange(min(x1), max(x1), 0.001), xlabels, rotation='vertical')
     plt.yticks(np.arange(min(y1), max(y1), 0.01), y1, rotation='horizontal')
@@ -224,29 +232,43 @@ current_wma_state = ''
 current_state_changed = False
 
 
-def check_wma_crossing(s, l, p):
+def check_wma_crossing(p, s, l, pair):
     global current_wma_state
     global current_state_changed
-    lot_size = 10000
+    lot_size = 30000
 
     current_state_changed = False
 
     if current_wma_state == 'A':
-        if s < l:
+        if s < l and p < l:
             current_wma_state = 'B'  # B = s is below
             current_state_changed = True
             if positions() is not []:
                 close()
                 account()
-            order(p, lot_size, 'buy')
+            order(pair, lot_size, 'sell')
+            print ''
+            print 'green is now below blue - time to sell'
+            print ''
     else:
-        if s > l:
+        if s > l and p > l:
             current_wma_state = 'A'  # A = s is above
             current_state_changed = True
             if positions() is not []:
                 close()
                 account()
-            order(p, lot_size, 'sell')
+            order(pair, lot_size, 'buy')
+            print ''
+            print 'green is now above blue - time to buy'
+            print ''
+    resp = json.loads(account())
+    if resp['unrealizedPl'] > 10:
+        close()
+        account()
+        print ''
+        print 'closing due to preset limit'
+        print ''
+
 
 		
 def compare_wma(candles_data_array):
