@@ -108,7 +108,7 @@ def get_candles(period, granularity, pair):
     return conn_json
 
 
-def w(period=100, gran='S5', pair='EUR_USD', wma_period_short=2, wma_period_long=21):
+def w(period=100, gran='S5', pair='EUR_USD', wma_period_short=2, wma_period_long=5):
     t = threading.Timer(10.0, w)
     t.daemon = True
     t.start()
