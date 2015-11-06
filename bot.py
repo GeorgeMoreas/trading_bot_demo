@@ -71,7 +71,7 @@ def order(pair='USD_JPY', units='1000', buysell='buy'):
     return conn_json
 
 
-def close(pair="EUR_USD"):
+def close(pair="USD_JPY"):
     conn = httplib.HTTPSConnection(rest_practice)
     url = ''.join(["/v1/accounts/", account_id, "/positions/", pair])
     conn.request("DELETE", url, "", headers)
@@ -80,7 +80,7 @@ def close(pair="EUR_USD"):
     return conn_json
 
 
-def price(pair='EUR_USD'):
+def price(pair='USD_JPY'):
     conn = httplib.HTTPSConnection(rest_practice)
     url = ''.join(["/v1/prices?instruments=", pair])
     conn.request("GET", url, "", headers)
@@ -108,7 +108,7 @@ def get_candles(period, granularity, pair):
     return conn_json
 
 
-def w(period=100, gran='S5', pair='EUR_USD', wma_period_short=2, wma_period_long=5):
+def w(period=100, gran='S5', pair='USD_JPY', wma_period_short=2, wma_period_long=5):
     t = threading.Timer(10.0, w)
     t.daemon = True
     t.start()
